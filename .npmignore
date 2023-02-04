@@ -1,1 +1,6 @@
 src
+.eslintrc.cjs
+dist
+tsconfig.json
+global.d.tsconfig
+tsup.config.ts

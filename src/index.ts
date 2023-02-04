@@ -13,7 +13,7 @@ interface LogConfigurationFunction extends WithHelp {
 
 interface Log {
   level: number;
-  what: string[];
+  what: unknown[];
 }
 
 function downloadReport(report: string, filename = 'report.txt') {
@@ -34,7 +34,7 @@ function downloadReport(report: string, filename = 'report.txt') {
 
 export default class Logger {
   constructor(
-    private config: LogConfigurationParameters,
+    private _config: LogConfigurationParameters,
     consoleMethods: { [key in LogFunctions]: string },
   ) {
     Object.entries(consoleMethods).forEach(([key, value]) => {
@@ -50,7 +50,7 @@ export default class Logger {
               },
             },
             (newConfig: LogConfigurationParameters) => {
-              Object.assign(this, newConfig);
+              this.config(newConfig);
             },
           );
           (window as unknown as TMap<LogConfigurationFunction>)[value] =
@@ -66,15 +66,7 @@ export default class Logger {
                 );
               },
             },
-            () => {
-              downloadReport(
-                this.logs
-                  .map((current) =>
-                    current.what.map((log) => `[${current.level}]: ${log}\n\r`),
-                  )
-                  .join(''),
-              );
-            },
+            () => this.getReport(),
           );
           (window as unknown as TMap<LogConfigurationFunction>)[value] =
             getReport;
@@ -88,19 +80,61 @@ export default class Logger {
     });
   }
 
+  /**
+   * Erases all the records stored in the inner buffer.
+   */
+  erase() {
+    this.logs = [];
+  }
+
+  #formatReport(log: Log) {
+    return log.what.map(
+      (current) =>
+        `${log.level !== Infinity ? `[${log.level}]` : '[]'}: ${(
+          current as string
+        ).toString()}\n\r`,
+    );
+  }
+
+  /**
+   * Will download a document with all reports made since the last erase or since it started.
+   */
+  getReport() {
+    downloadReport(
+      this.logs.map((current) => this.#formatReport(current)).join(''),
+    );
+  }
+
   private logs: Log[] = [];
 
-  public log(what: string[]): void;
+  /**
+   * @param what Whatever you want to throw to the console (or the report)
+   */
+  public log(...what: unknown[]): void;
 
-  public log(logLevel: number, what: string[]): void;
+  /**
+   * @param level The level of the log, if any level is configured (through constructor or through logger.config). It will show the log on the console only if the log level matches the configuration. The log will be added to the report always.
+   * @param what Whatever you want to throw to the console (or the report)
+   */
+  public log(level: number, ...what: unknown[]): void;
 
-  public log(par1: string[] | number, par2?: string[]): void {
-    const what = Array.isArray(par1) ? par1 : (par2 as string[]);
+  public log(
+    par1: unknown[] | number,
+    par2?: unknown[],
+    ...r: unknown[]
+  ): void {
+    const what = Array.isArray(par1)
+      ? [par1, par2, ...r]
+      : [par2 as unknown[], ...r];
     const level = typeof par1 === 'number' ? par1 : Infinity;
     this.logs.push({ level, what });
 
-    if (this.config.enabled && this.config.level <= level) {
-      console.log(...what);
+    if (this._config.enabled && this._config.level <= level) {
+      console.log(this.#formatReport({ level, what }));
     }
+  }
+
+  public config(newConfig: Partial<LogConfigurationParameters>) {
+    Object.assign(this._config, newConfig);
   }
 }

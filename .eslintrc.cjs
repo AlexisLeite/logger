@@ -56,6 +56,15 @@ module.exports = {
         'no-underscore-dangle': 'off',
         'operator-linebreak': 'off',
         '@typescript-eslint/no-empty-function': 'off',
+        'max-len': [
+          'error',
+          {
+            ignoreComments: true,
+            ignoreStrings: true,
+            ignoreTemplateLiterals: true,
+            ignoreRegExpLiterals: true,
+          },
+        ],
         'prettier/prettier': [
           'error',
           {
