@@ -2,5 +2,5 @@ src
 .eslintrc.cjs
 dist
 tsconfig.json
-global.d.tsconfig
+global.d.ts
 tsup.config.ts
