@@ -1,0 +1,47 @@
+{
+  "name": "logger",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "import": "./dist/index.js",
+    "require": "./dist/index.cjs",
+    "default": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "set NODE_ENV=production&& tsup",
+    "start": "npm run build -- --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexisLeite/logger.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AlexisLeite/logger/issues"
+  },
+  "homepage": "https://github.com/AlexisLeite/logger#readme",
+  "devDependencies": {
+    "@types/lodash.clonedeep": "^4.5.7",
+    "@types/node": "^18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.40.1",
+    "@typescript-eslint/parser": "^5.40.1",
+    "eslint": "^8.2.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-import-resolver-typescript": "^3.5.2",
+    "eslint-plugin-import": "^2.25.3",
+    "eslint-plugin-jsx-a11y": "^6.5.1",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.28.0",
+    "eslint-plugin-react-hooks": "^4.6.0"
+  },
+  "dependencies": {
+    "tsup": "^6.5.0",
+    "typescript": "^4.9.4"
+  }
+}
