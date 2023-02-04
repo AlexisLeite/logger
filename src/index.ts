@@ -16,6 +16,22 @@ interface Log {
   what: string[];
 }
 
+function downloadReport(report: string, filename = 'report.txt') {
+  const element = document.createElement('a');
+  element.setAttribute(
+    'href',
+    `data:text/plain;charset=utf-8,${encodeURIComponent(report)}`,
+  );
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
+
 export default class Logger {
   constructor(
     private config: LogConfigurationParameters,
@@ -42,7 +58,7 @@ export default class Logger {
           break;
         }
         case 'getReport': {
-          const consoleConfig: LogConfigurationFunction = Object.assign(
+          const getReport: LogConfigurationFunction = Object.assign(
             {
               help: () => {
                 console.log(
@@ -50,12 +66,18 @@ export default class Logger {
                 );
               },
             },
-            (newConfig: LogConfigurationParameters) => {
-              Object.assign(this, newConfig);
+            () => {
+              downloadReport(
+                this.logs
+                  .map((current) =>
+                    current.what.map((log) => `[${current.level}]: ${log}\n\r`),
+                  )
+                  .join(''),
+              );
             },
           );
           (window as unknown as TMap<LogConfigurationFunction>)[value] =
-            consoleConfig;
+            getReport;
 
           break;
         }
