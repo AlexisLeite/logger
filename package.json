@@ -2,14 +2,14 @@
   "name": "@aluy/logger",
   "version": "1.0.1",
   "description": "",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./lib/index.cjs",
+  "module": "./lib/index.js",
   "type": "module",
-  "types": "./dist/index.d.ts",
+  "types": "./lib/index.d.ts",
   "exports": {
-    "import": "./dist/index.js",
-    "require": "./dist/index.cjs",
-    "default": "./dist/index.js"
+    "import": "./lib/index.js",
+    "require": "./lib/index.cjs",
+    "default": "./lib/index.js"
   },
   "scripts": {
     "build": "set NODE_ENV=production&& tsup",
