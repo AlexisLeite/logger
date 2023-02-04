@@ -41,6 +41,11 @@ export default class Logger {
     this._config = storedConfig
       ? (JSON.parse(storedConfig) as LogConfigurationParameters)
       : nonStoredConfig;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (this._config.reportLevel === null) this._config.reportLevel = Infinity;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (this._config.consoleLevel === null)
+      this._config.consoleLevel = Infinity;
     this.#persistConfiguration();
 
     if (consoleMethods) {
@@ -114,7 +119,7 @@ export default class Logger {
         log.level !== Infinity
           ? this._config.levelNames[log.level] ?? log.level
           : '';
-      return this._config.template
+      return (log.template ?? this._config.template)
         .replace('{{LEVEL}}', String(level))
         .replace('{{BODY}}', JSON.stringify(current));
     });
@@ -140,6 +145,10 @@ export default class Logger {
       },
       method: (newMethod: LogMethod) => {
         handler.onMethod(newMethod);
+        return this.#getChainable(handler);
+      },
+      template: (newTemplate: string) => {
+        handler.onTemplate(newTemplate);
         return this.#getChainable(handler);
       },
       warn: () => {
@@ -190,19 +199,21 @@ export default class Logger {
     let level = Infinity;
     let forced = false;
     let method: LogMethod = this._config.defaultMethod;
+    let template: string | undefined;
 
     setTimeout(() => {
+      const log = { level, template, what };
       if (
         forced ||
         (this._config.reportEnabled && this._config.reportLevel >= level)
       ) {
-        this.logs.push({ level, what });
+        this.logs.push(log);
       }
       if (
         forced ||
         (this._config.consoleEnabled && this._config.consoleLevel >= level)
       ) {
-        console[method](this.#formatReport({ level, what }));
+        console[method](this.#formatReport(log));
       }
     }, 0);
 
@@ -215,6 +226,9 @@ export default class Logger {
       },
       onSetLevel(newLevel) {
         level = newLevel;
+      },
+      onTemplate(newTemplate) {
+        template = newTemplate;
       }
     });
   }

@@ -42,11 +42,13 @@ export interface LogConfigurationParameters {
 
 export interface Log {
   level: number;
+  template?: string;
   what: unknown[];
 }
 
 export interface ChainableEvents {
   onForced: () => void;
   onMethod: (method: LogMethod) => void;
+  onTemplate: (template: string) => void;
   onSetLevel: (level: number) => void;
 }

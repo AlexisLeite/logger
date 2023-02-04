@@ -18,7 +18,7 @@ const config: Options = {
   target: 'es2020',
   treeshake: true,
   tsconfig: './tsconfig.json',
-  watch: env !== 'production',
+  watch: true
 };
 
 export default config;
