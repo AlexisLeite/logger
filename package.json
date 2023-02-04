@@ -1,5 +1,5 @@
 {
-  "name": "logger",
+  "name": "@aluy/logger",
   "version": "1.0.0",
   "description": "",
   "main": "./dist/index.cjs",
@@ -19,7 +19,7 @@
     "type": "git",
     "url": "git+https://github.com/AlexisLeite/logger.git"
   },
-  "author": "",
+  "author": "Alexis Leite <alexisleite@live.com>",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/AlexisLeite/logger/issues"
