@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "set NODE_ENV=production&& tsup",
-    "start": "npm run build -- --watch"
+    "start": "npm run build"
   },
   "repository": {
     "type": "git",

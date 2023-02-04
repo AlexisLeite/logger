@@ -13,12 +13,12 @@ const config: Options = {
   minify: env === 'production',
   outDir: env === 'production' ? 'lib' : 'dist',
   skipNodeModulesBundle: true,
-  sourcemap: true,
+  sourcemap: env !== 'production',
   splitting: true,
   target: 'es2020',
   treeshake: true,
   tsconfig: './tsconfig.json',
-  watch: env === 'development',
+  watch: env !== 'production',
 };
 
 export default config;
