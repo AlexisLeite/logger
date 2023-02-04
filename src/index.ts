@@ -1,140 +1,221 @@
-import { TMap, WithHelp } from './types';
-
-type LogFunctions = 'consoleConfig' | 'getReport';
-
-interface LogConfigurationParameters {
-  enabled: boolean;
-  level: number;
-}
-
-interface LogConfigurationFunction extends WithHelp {
-  (config: LogConfigurationParameters): void;
-}
-
-interface Log {
-  level: number;
-  what: unknown[];
-}
-
-function downloadReport(report: string, filename = 'report.txt') {
-  const element = document.createElement('a');
-  element.setAttribute(
-    'href',
-    `data:text/plain;charset=utf-8,${encodeURIComponent(report)}`,
-  );
-  element.setAttribute('download', filename);
-
-  element.style.display = 'none';
-  document.body.appendChild(element);
-
-  element.click();
-
-  document.body.removeChild(element);
-}
+import {
+  ChainableEvents,
+  Log,
+  LogConfigurationParameters,
+  LogFunctions,
+  LogMethod,
+  Map,
+  WithHelpFunction
+} from './types';
+import { downloadReport } from './util';
 
 export default class Logger {
+  private _config: LogConfigurationParameters;
+
+  private logs: Log[] = [];
+
   constructor(
-    private _config: LogConfigurationParameters,
-    consoleMethods: { [key in LogFunctions]: string },
+    consoleMethods?: Partial<LogFunctions>,
+    config?: Partial<LogConfigurationParameters>
   ) {
-    Object.entries(consoleMethods).forEach(([key, value]) => {
-      switch (key as LogFunctions) {
-        case 'consoleConfig': {
-          const consoleConfig: LogConfigurationFunction = Object.assign(
-            {
-              help: () => {
-                console.log(`With the method window.${value} you can configure this logger. The argument must be {
+    const persistObjectName = config?.persistObjectName ?? 'loggerPersist';
+    const storedConfig = localStorage.getItem(persistObjectName);
+    const nonStoredConfig: LogConfigurationParameters = {
+      consoleEnabled: true,
+      consoleLevel: 2,
+      defaultMethod: 'log',
+      defaultName: 'report.txt',
+      levelNames: {
+        0: 'CRITICAL',
+        1: 'ERROR',
+        2: 'WARNING',
+        3: 'INFO'
+      },
+      persistConfiguration: true,
+      persistObjectName,
+      reportEnabled: true,
+      reportLevel: Infinity,
+      template: '[{{LEVEL}}]: {{BODY}}',
+      ...config
+    };
+    this._config = storedConfig
+      ? (JSON.parse(storedConfig) as LogConfigurationParameters)
+      : nonStoredConfig;
+    this.#persistConfiguration();
+
+    if (consoleMethods) {
+      Object.entries(consoleMethods).forEach(([key, value]) => {
+        switch (key as keyof LogFunctions) {
+          case 'consoleConfig': {
+            const consoleConfig: WithHelpFunction<
+              LogConfigurationParameters
+            > = (newConfig) => {
+              this.config(newConfig);
+            };
+            consoleConfig.help = () => {
+              console.log(`With the method window.${value} you can configure this logger. The argument must be {
   enabled: boolean;
   logLevel: number;
 }`);
-              },
-            },
-            (newConfig: LogConfigurationParameters) => {
-              this.config(newConfig);
-            },
-          );
-          (window as unknown as TMap<LogConfigurationFunction>)[value] =
-            consoleConfig;
-          break;
-        }
-        case 'getReport': {
-          const getReport: LogConfigurationFunction = Object.assign(
-            {
-              help: () => {
-                console.log(
-                  `With the method window.${value} get a report about the logs made through this logger.`,
-                );
-              },
-            },
-            () => this.getReport(),
-          );
-          (window as unknown as TMap<LogConfigurationFunction>)[value] =
-            getReport;
+            };
+            (window as unknown as Map<WithHelpFunction>)[value] = consoleConfig;
+            break;
+          }
+          case 'consoleLog': {
+            const consoleLog: WithHelpFunction<unknown[]> = (...args) =>
+              this.log(...args);
+            consoleLog.help = () => {
+              console.log(
+                `With the method window.${value} adds a log to the report.`
+              );
+            };
+            (window as unknown as Map<WithHelpFunction>)[value] = consoleLog;
 
-          break;
-        }
+            break;
+          }
+          case 'getReport': {
+            const getReport: WithHelpFunction = () => {
+              this.getReport();
+            };
+            getReport.help = () => {
+              console.log(
+                `With the method window.${value} get a report about the logs made through this logger.`
+              );
+            };
+            (window as unknown as Map<WithHelpFunction>)[value] = getReport;
 
-        default:
-          break;
-      }
+            break;
+          }
+          case 'shoutConfiguration': {
+            const shoutConfiguration: WithHelpFunction = () => {
+              console.log({ ...this._config });
+            };
+            shoutConfiguration.help = () => {
+              console.log(
+                `With the method window.${value} the reporter logs to the console its current configuration.`
+              );
+            };
+            (window as unknown as Map<WithHelpFunction>)[value] =
+              shoutConfiguration;
+
+            break;
+          }
+
+          default:
+            break;
+        }
+      });
+    }
+  }
+
+  #formatReport(log: Log) {
+    return log.what.map((current) => {
+      const level =
+        log.level !== Infinity
+          ? this._config.levelNames[log.level] ?? log.level
+          : '';
+      return this._config.template
+        .replace('{{LEVEL}}', String(level))
+        .replace('{{BODY}}', JSON.stringify(current));
     });
+  }
+
+  #getChainable(handler: ChainableEvents) {
+    return {
+      force: () => {
+        handler.onForced();
+        return this.#getChainable(handler);
+      },
+      error: () => {
+        handler.onMethod('error');
+        return this.#getChainable(handler);
+      },
+      info: () => {
+        handler.onMethod('info');
+        return this.#getChainable(handler);
+      },
+      level: (logLevel: number) => {
+        handler.onSetLevel(logLevel);
+        return this.#getChainable(handler);
+      },
+      method: (newMethod: LogMethod) => {
+        handler.onMethod(newMethod);
+        return this.#getChainable(handler);
+      },
+      warn: () => {
+        handler.onMethod('warn');
+        return this.#getChainable(handler);
+      }
+    };
+  }
+
+  #persistConfiguration() {
+    if (this._config.persistConfiguration)
+      localStorage.setItem(
+        this._config.persistObjectName,
+        JSON.stringify(this._config)
+      );
+    else localStorage.removeItem(this._config.persistObjectName);
+  }
+
+  public config(newConfig: Partial<LogConfigurationParameters>) {
+    Object.assign(this._config, newConfig);
+
+    this.#persistConfiguration();
   }
 
   /**
    * Erases all the records stored in the inner buffer.
    */
-  erase() {
+  public erase() {
     this.logs = [];
-  }
-
-  #formatReport(log: Log) {
-    return log.what.map(
-      (current) =>
-        `${log.level !== Infinity ? `[${log.level}]` : '[]'}: ${(
-          current as string
-        ).toString()}\n\r`,
-    );
   }
 
   /**
    * Will download a document with all reports made since the last erase or since it started.
    */
-  getReport() {
+  public getReport(reportName = this._config.defaultName) {
     downloadReport(
-      this.logs.map((current) => this.#formatReport(current)).join(''),
+      this.logs
+        .map((current) => this.#formatReport(current).join('\n'))
+        .join('\n'),
+      reportName
     );
   }
 
-  private logs: Log[] = [];
-
   /**
    * @param what Whatever you want to throw to the console (or the report)
    */
-  public log(...what: unknown[]): void;
+  public log(...what: unknown[]) {
+    let level = Infinity;
+    let forced = false;
+    let method: LogMethod = this._config.defaultMethod;
 
-  /**
-   * @param level The level of the log, if any level is configured (through constructor or through logger.config). It will show the log on the console only if the log level matches the configuration. The log will be added to the report always.
-   * @param what Whatever you want to throw to the console (or the report)
-   */
-  public log(level: number, ...what: unknown[]): void;
+    setTimeout(() => {
+      if (
+        forced ||
+        (this._config.reportEnabled && this._config.reportLevel >= level)
+      ) {
+        this.logs.push({ level, what });
+      }
+      if (
+        forced ||
+        (this._config.consoleEnabled && this._config.consoleLevel >= level)
+      ) {
+        console[method](this.#formatReport({ level, what }));
+      }
+    }, 0);
 
-  public log(
-    par1: unknown[] | number,
-    par2?: unknown[],
-    ...r: unknown[]
-  ): void {
-    const what = Array.isArray(par1)
-      ? [par1, par2, ...r]
-      : [par2 as unknown[], ...r];
-    const level = typeof par1 === 'number' ? par1 : Infinity;
-    this.logs.push({ level, what });
-
-    if (this._config.enabled && this._config.level <= level) {
-      console.log(this.#formatReport({ level, what }));
-    }
-  }
-
-  public config(newConfig: Partial<LogConfigurationParameters>) {
-    Object.assign(this._config, newConfig);
+    return this.#getChainable({
+      onForced() {
+        forced = true;
+      },
+      onMethod(newMethod) {
+        method = newMethod;
+      },
+      onSetLevel(newLevel) {
+        level = newLevel;
+      }
+    });
   }
 }

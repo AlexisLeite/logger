@@ -2,13 +2,14 @@ module.exports = {
   env: {
     es2021: true,
     node: true,
-    browser: true,
+    browser: true
   },
+  root: true,
   extends: [
     'eslint:recommended',
     'plugin:react/recommended',
     'plugin:prettier/recommended',
-    'plugin:react-hooks/recommended',
+    'plugin:react-hooks/recommended'
   ],
   overrides: [
     {
@@ -16,16 +17,27 @@ module.exports = {
         'plugin:@typescript-eslint/recommended',
         'plugin:@typescript-eslint/recommended-requiring-type-checking',
         'plugin:@typescript-eslint/strict',
-        'eslint-config-airbnb-base',
+        'eslint-config-airbnb-base'
       ],
       files: ['*.ts', '*.tsx', '.eslintrc.cjs'],
       parserOptions: {
-        project: `${__dirname}/tsconfig.json`,
+        project: `${__dirname}/tsconfig.json`
       },
       rules: {
         indent: 'off',
         quotes: ['error', 'single'],
         semi: ['error', 'always'],
+        'comma-dangle': 'off',
+        //
+        'template-curly-spacing': 'off',
+        'object-curly-spacing': 'off',
+        'space-in-brackets': 'off',
+        'space-before-blocks': 'off',
+        curly: 'off',
+        'typescript-eslint/object-curly-spacing': 'off',
+        'react/jsx-curly-spacing': 'off',
+
+        //
         'react-hooks/rules-of-hooks': 'error',
         'react-hooks/exhaustive-deps': 'warn',
         'no-console': 'off',
@@ -40,14 +52,14 @@ module.exports = {
         'react/react-in-jsx-scope': 'off',
         'class-methods-use-this': 'off',
         '@typescript-eslint/non-nullable-type-assertion-style': 'off',
-        'linebreak-style': ['error', 'windows'],
+        'linebreak-style': 'off',
         'no-dupe-class-members': 'off',
         'no-param-reassign': [
           'error',
           {
             props: true,
-            ignorePropertyModificationsFor: ['state'],
-          },
+            ignorePropertyModificationsFor: ['state']
+          }
         ],
         'no-confusing-arrow': 'off',
         'implicit-arrow-linebreak': 'off',
@@ -56,41 +68,36 @@ module.exports = {
         'no-underscore-dangle': 'off',
         'operator-linebreak': 'off',
         '@typescript-eslint/no-empty-function': 'off',
-        'max-len': [
-          'error',
-          {
-            ignoreComments: true,
-            ignoreStrings: true,
-            ignoreTemplateLiterals: true,
-            ignoreRegExpLiterals: true,
-          },
-        ],
+        'max-len': 'off',
+        'nonblock-statement-body-position': 'off',
         'prettier/prettier': [
           'error',
           {
+            bracketsSpacing: true,
+            bracketLine: true,
             endOfLine: 'crlf',
             singleQuote: true,
-            trailingComma: 'all',
-          },
+            trailingComma: 'none'
+          }
         ],
-        'no-multiple-empty-lines': 'off',
-      },
-    },
+        'no-multiple-empty-lines': 'off'
+      }
+    }
   ],
   parser: '@typescript-eslint/parser',
   plugins: [
     'react',
     'react-hooks',
     '@typescript-eslint',
-    'eslint-plugin-react-hooks',
+    'eslint-plugin-react-hooks'
   ],
   settings: {
     'import/resolver': {
-      typescript: {},
+      typescript: {}
     },
     react: {
-      version: 'detect',
-    },
+      version: 'detect'
+    }
   },
-  ignorePatterns: ['dist', 'lib', 'node_modules'],
+  ignorePatterns: ['dist', 'lib', 'node_modules']
 };
