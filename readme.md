@@ -1,6 +1,32 @@
 # Logger
 
+- [Logger](#logger)
+  - [Basic usage](#basic-usage)
+    - [Important](#important)
+  - [Api](#api)
+    - [config](#config)
+    - [erase](#erase)
+    - [erasePersistedConfiguration](#erasepersistedconfiguration)
+    - [getReport](#getreport)
+  - [Log methods](#log-methods)
+  - [Chaining methods](#chaining-methods)
+  - [Configurations](#configurations)
+  - [window.console methods](#windowconsole-methods)
+
+
 Offers a very simple way to log a component actions to a file, which could be downloaded through logger.getReport() and optionally to the console too.
+
+Its logic is very simple: all logs have a level associated. If the log's level is greater than or equal to the configured level, it will be shouted.
+
+Every log's level is queried two times, one time in order to determine if it must be logged to the report and a second time in order to determine if it must be shouted to the console.
+
+```typescript
+<Button onClick={
+  React.useCallback(()=>{
+    logger.getReport();
+  },[])
+}>Download report</Button>
+```
 
 ## Basic usage
 
