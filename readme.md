@@ -45,7 +45,8 @@ usersLogger.critical('Critical error: users database failure');
 // To avoid this error, it is possible to call the method like this:
 usersLogger.critical('Critical error: users database failure')();
 /**
- * Note that a function call has been added at the end of the expression, now the file and line printed are those where the .log method was called.
+ * Notice that a function call has been added at the end of the expression, now the file and line printed are those where the .log method was called.
+ * */
 
 ```
 
