@@ -1,6 +1,6 @@
 {
   "name": "@aluy/logger",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "",
   "main": "./lib/index.cjs",
   "module": "./lib/index.js",
