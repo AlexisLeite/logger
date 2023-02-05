@@ -4,4 +4,6 @@ dist
 tsconfig.json
 global.d.ts
 tsup.config.ts
-privateTypes
+privateTypes.d.ts
+privateTypes.cjs
+privateTypes.js

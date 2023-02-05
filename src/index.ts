@@ -44,7 +44,11 @@ export default class Logger {
     // eslint-disable-next-line prettier/prettier
     return Object.assign(result.willLog ? consoleLog : () => { }, {
       forceConsole: () => {
-        handler.onForced();
+        handler.onForcedConsole();
+        return this.#getChainable(actualMethod, handler);
+      },
+      forceReport: () => {
+        handler.onForcedConsole();
         return this.#getChainable(actualMethod, handler);
       },
       dir: () => {
@@ -220,6 +224,10 @@ export default class Logger {
     }
   }
 
+  #shouldLog(enabled: boolean, logLevel: number, configurationLevel: number) {
+    return configurationLevel >= logLevel;
+  }
+
   public config(newConfig: Partial<LogConfigurationParameters>) {
     Object.assign(this._config, newConfig);
 
@@ -255,7 +263,8 @@ export default class Logger {
    */
   public Log(...what: unknown[]) {
     let level = Infinity;
-    let forced = false;
+    let forcedConsole = false;
+    let forcedReport = false;
     let method: LogMethod = this._config.defaultMethod;
     let template: string | undefined;
     let consoleLogged = false;
@@ -263,15 +272,23 @@ export default class Logger {
     setTimeout(() => {
       const log = { level, template, what };
       if (
-        forced ||
-        (this._config.reportEnabled && this._config.reportLevel >= level)
+        forcedReport ||
+        this.#shouldLog(
+          this._config.reportEnabled,
+          level,
+          this._config.reportLevel
+        )
       ) {
         this.logs.push(log);
       }
       if (
         !consoleLogged &&
-        (forced ||
-          (this._config.consoleEnabled && this._config.consoleLevel >= level))
+        (forcedConsole ||
+          this.#shouldLog(
+            this._config.consoleEnabled,
+            level,
+            this._config.consoleLevel
+          ))
       ) {
         console[method](this.#formatReport(log));
       }
@@ -280,7 +297,7 @@ export default class Logger {
     return this.#getChainable(method, {
       callback: () => {
         const willLog =
-          forced ||
+          forcedConsole ||
           (this._config.consoleEnabled && this._config.consoleLevel >= level);
         return {
           willLog,
@@ -290,8 +307,11 @@ export default class Logger {
           }
         };
       },
-      onForced() {
-        forced = true;
+      onForcedConsole() {
+        forcedConsole = true;
+      },
+      onForcedReport() {
+        forcedReport = true;
       },
       onMethod(newMethod) {
         method = newMethod;

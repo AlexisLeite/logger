@@ -183,6 +183,7 @@ Notice that methods **can be chained** in order to alter the behavior of any log
 
 All the log methods are chainable with configuration methods in order to alter the behavior of the log that is being emitted. The chain methods are: 
  - **forceConsole**: Forces the output to the console removing the level restrictions for the current log.
+ - **forceReport**: Forces the output to the report removing the level restrictions for the current log.
  - **dir**: Shouts if corresponds the log to the console with the dir method.
  - **error**: Shouts if corresponds the log to the console with the error method.
  - **group**: Shouts if corresponds the log to the console with the group method.
@@ -199,10 +200,11 @@ All the log methods are chainable with configuration methods in order to alter t
 
 usersLogger.log('This error must be shown, no matter the configuration. Its level should be 0. The console method must be console.table. It should use a custom template')
   .forceConsole()
+  .forceReport()
   .level(0)
   .table()
   .template('{{REPORTERNAME}} says: {{BODY}} with level {{LEVEL}}')
-  
+
 ```
 
 ## Configurations

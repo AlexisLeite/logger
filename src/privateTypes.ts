@@ -2,7 +2,8 @@ import { LogMethod } from './types';
 
 export interface ChainableEvents {
   callback: () => { willLog: boolean; log: () => unknown[] };
-  onForced: () => void;
+  onForcedConsole: () => void;
+  onForcedReport: () => void;
   onMethod: (method: LogMethod) => void;
   onTemplate: (template: string) => void;
   onSetLevel: (level: number) => void;
