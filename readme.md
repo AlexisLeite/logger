@@ -241,11 +241,11 @@ export interface LogConfigurationParameters {
 
 ```
 
-**consoleEnabled**: Whether to console.log or not.
-**consoleLevel**: Which is the maximum level reported to the console, pass Infinity to allow all.
-**defaultMethod**: The method the logger will use to log to the console by default.
-**defaultReportName**: The default fileName the reporter will use when downloading.
-**levelNames**: An object with numeric entries, indicating the name of each log. Defaults are:
+ - **consoleEnabled**: Whether to console.log or not.
+ - **consoleLevel**: Which is the maximum level reported to the console, pass Infinity to allow all.
+ - **defaultMethod**: The method the logger will use to log to the console by default.
+ - **defaultReportName**: The default fileName the reporter will use when downloading.
+ - **levelNames**: An object with numeric entries, indicating the name of each log. Defaults are:
 
 ```typescript
 
@@ -259,12 +259,12 @@ const levelNames = {
 
 ```
 
-**persistConfiguration**: Whether to persist the configuration to the localStorage or not.
-**persistObjectName**: The name that will be used in the localStorage to keep the configuration.
-**reportEnabled**: Whether to print to report or not.
-**reportLevel**: Which is the maximum level reported to the report, pass Infinity to allow all.
-**reporterName**: If you include the placeholder {{REPORTERNAME}} in a custom passed template, it will be replaced by the content of this property.
-**template**: Allows to modify the way each line of the report is shown.
+ - **persistConfiguration**: Whether to persist the configuration to the localStorage or not.
+ - **persistObjectName**: The name that will be used in the localStorage to keep the configuration.
+ - **reportEnabled**: Whether to print to report or not.
+ - **reportLevel**: Which is the maximum level reported to the report, pass Infinity to allow all.
+ - **reporterName**: If you include the placeholder {{REPORTERNAME}} in a custom passed template, it will be replaced by the content of this property.
+ - **template**: Allows to modify the way each line of the report is shown.
 
 ## window.console methods
 
