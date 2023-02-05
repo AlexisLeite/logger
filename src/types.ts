@@ -3,17 +3,8 @@ export type Map<
   S extends string | number | symbol = string
 > = Record<S, T>;
 
-export interface WithHelp {
-  help?: () => void;
-}
-
-export interface WithHelpFunction<ArgumentsType = never, ReturnType = void>
-  extends WithHelp {
-  (args: ArgumentsType): ReturnType;
-}
-
 export type LogFunctions = Record<
-  'consoleLog' | 'consoleConfig' | 'getReport' | 'shoutConfiguration',
+  'config' | 'eraseConfiguration' | 'getReport' | 'log' | 'shoutConfiguration',
   string
 >;
 
@@ -26,14 +17,16 @@ export interface LogConfigurationParameters {
   consoleEnabled: boolean;
   consoleLevel: number;
   defaultMethod: LogMethod;
-  defaultName: string;
+  defaultReportName: string;
   levelNames: Record<number, string>;
   persistConfiguration: boolean;
   persistObjectName: string;
   reportEnabled: boolean;
   reportLevel: number;
+  reporterName?: string;
   /**
    * Available placeholders:
+   * {{REPORTERNAME}}
    * {{LEVEL}}
    * {{BODY}}
    */
@@ -44,11 +37,4 @@ export interface Log {
   level: number;
   template?: string;
   what: unknown[];
-}
-
-export interface ChainableEvents {
-  onForced: () => void;
-  onMethod: (method: LogMethod) => void;
-  onTemplate: (template: string) => void;
-  onSetLevel: (level: number) => void;
 }
