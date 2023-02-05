@@ -51,6 +51,12 @@ export default class Logger {
         handler.onForcedConsole();
         return this.#getChainable(actualMethod, handler);
       },
+      critical: () => {
+        actualMethod = 'error';
+        handler.onMethod('error');
+        handler.onSetLevel(0);
+        return this.#getChainable(actualMethod, handler);
+      },
       dir: () => {
         actualMethod = 'dir';
         handler.onMethod('dir');

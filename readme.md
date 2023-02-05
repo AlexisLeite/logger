@@ -31,6 +31,24 @@ Every log's level is queried two times, one time in order to determine if it mus
 
 ## Basic usage
 
+### Important
+
+Due to console.log cannot be wrapped keeping the original file and line number, there is a workaround which forces to return a function which may be called in order to keep the correct line number.
+
+Example:
+
+```typescript
+
+usersLogger.critical('Critical error: users database failure');
+// The above line will console.log with fileName index.js (the index.js of the logger library)
+
+// To avoid this error, it is possible to call the method like this:
+usersLogger.critical('Critical error: users database failure')();
+/**
+ * Note that a function call has been added at the end of the expression, now the file and line printed are those where the .log method was called.
+
+```
+
 Logger is a class that must be instantiated in order to put it to work like the following example, which will be used through the whole readme file to give examples:
 
 ```typescript
@@ -65,24 +83,6 @@ const usersLogger = new Logger(
     getReport: 'report',
     shoutConfiguration: 'shout',
   },);
-
-```
-
-### Important
-
-Due to console.log cannot be wrapped keeping the original file and line number, there is a workaround which forces to return a function which may be called in order to keep the correct line number.
-
-Example:
-
-```typescript
-
-usersLogger.critical('Critical error: users database failure');
-// The above line will console.log with fileName index.js (the index.js of the logger library)
-
-// To avoid this error, it is possible to call the method like this:
-usersLogger.critical('Critical error: users database failure')();
-/**
- * Note that a function call has been added at the end of the expression, now the file and line printed are those where the .log method was called.
 
 ```
 
@@ -142,31 +142,31 @@ usersLogger.config({
   reporterName: 'usersLogger',
   template: '[{{REPORTERNAME}}][{{LEVEL}}]: {{BODY}}'
 })
-usersLogger.log('A debug purpose log');
+usersLogger.log('A debug purpose log')();
 /**
  * output: [usersLogger][DEBUG]: A debug purpose log
  * 
  * The above method tries to push a level 4 log. However the reportLevel is 3 so it wont be added to the report, and the consoleLevel is 2 and it wont be thrown to the console either. Notice that if consoleLevel were 4, it would have used the console.log method.
 */
-usersLogger.info('An informational log');
+usersLogger.info('An informational log')();
 /**
  * output: [usersLogger][INFO]: An informational log
  * 
  * The above method pushes a log with level 3 to the report. No output in the console since the consoleLevel is 2.
 */
-usersLogger.warn('A warning log');
+usersLogger.warn('A warning log')();
 /**
  * output: [usersLogger][WARNING]: A warning log
  * 
  * The above method pushes a level 2 log to the report and shouts the log with console.warn
 */
-usersLogger.error('An error log');
+usersLogger.error('An error log')();
 /**
  * output: [usersLogger][ERROR]: An error log
  * 
  * The above method pushes a level 1 log to the report and shouts the log with console.error
 */
-usersLogger.critical('A critical error');
+usersLogger.critical('A critical error')();
 /**
  * output: [usersLogger][CRITICAL]: A critical error
  * 
@@ -203,7 +203,8 @@ usersLogger.log('This error must be shown, no matter the configuration. Its leve
   .forceReport()
   .level(0)
   .table()
-  .template('{{REPORTERNAME}} says: {{BODY}} with level {{LEVEL}}')
+  .template('{{REPORTERNAME}} says: {{BODY}} with level {{LEVEL}}')() 
+  // The last call (the two empty parenthesis), bind the log to the current file
 
 ```
 
