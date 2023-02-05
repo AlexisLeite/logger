@@ -10,6 +10,7 @@
     - [getReport](#getreport)
   - [Log methods](#log-methods)
   - [Chaining methods](#chaining-methods)
+    - [Example](#example)
   - [Configurations](#configurations)
   - [window.console methods](#windowconsole-methods)
 
@@ -191,6 +192,18 @@ All the log methods are chainable with configuration methods in order to alter t
  - **table**: Shouts if corresponds the log to the console with the table method.
  - **template**: Allows to change the template for the current log.
  - **warn**: Shouts if corresponds the log to the console with the warn method.
+
+### Example
+
+```typescript
+
+usersLogger.log('This error must be shown, no matter the configuration. Its level should be 0. The console method must be console.table. It should use a custom template')
+  .forceConsole()
+  .level(0)
+  .table()
+  .template('{{REPORTERNAME}} says: {{BODY}} with level {{LEVEL}}')
+  
+```
 
 ## Configurations
 
