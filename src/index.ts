@@ -1,4 +1,8 @@
-import { ChainableEvents, WithHelpFunction } from './privateTypes';
+import {
+  ChainableBind,
+  ChainableEvents,
+  WithHelpFunction
+} from './privateTypes';
 import {
   Log,
   LogConfigurationParameters,
@@ -24,81 +28,91 @@ export default class Logger {
   }
 
   #formatReport(log: Log) {
-    return log.what.map((current) => {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      const level = this._config.levelNames[log.level] ?? log.level ?? '';
-      return (log.template ?? this._config.template)
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const level = this._config.levelNames[log.level] ?? log.level ?? '';
+    return log.what.map((current) =>
+      (log.template ?? this._config.template)
         .replace('{{LEVEL}}', String(level))
-        .replace('{{REPORTERNAME}}', String(this._config.reporterName ?? ''))
-        .replace('{{BODY}}', JSON.stringify(current));
-    });
+        .replace(
+          '{{REPORTERNAME}}',
+          String(log.reporterName ?? this._config.reporterName ?? '')
+        )
+        .replace('{{BODY}}', JSON.stringify(current))
+    );
   }
 
-  #getChainable(method: LogMethod, handler: ChainableEvents) {
+  #getChainable(method: LogMethod, handler: ChainableEvents, bind = true) {
     let actualMethod = method;
-    const result = handler.callback();
-    const consoleLog = (console[method] as typeof console.log).bind(
-      console[method] as typeof console.log,
-      ...result.log()
-    );
-    // eslint-disable-next-line prettier/prettier
-    return Object.assign(result.willLog ? consoleLog : () => { }, {
+
+    let assignMethod: (...args: unknown[]) => void = handler.callback;
+    if (bind) {
+      const result = (handler.callback as () => ChainableBind)();
+      const consoleMethod = console[actualMethod] as typeof console.log;
+      assignMethod = result.willLog
+        ? consoleMethod.bind(consoleMethod, ...result.log())
+        : () => {};
+    }
+
+    return Object.assign(assignMethod, {
+      config: (newConfig: Partial<LogConfigurationParameters>) => {
+        handler.onConfig(newConfig);
+        return this.#getChainable(actualMethod, handler, bind);
+      },
       forceConsole: () => {
         handler.onForcedConsole();
-        return this.#getChainable(actualMethod, handler);
+        return this.#getChainable(actualMethod, handler, bind);
       },
       forceReport: () => {
         handler.onForcedConsole();
-        return this.#getChainable(actualMethod, handler);
+        return this.#getChainable(actualMethod, handler, bind);
+      },
+      changeReporterName: (newName: string) => {
+        handler.onChangeName(newName);
+        return this.#getChainable(actualMethod, handler, bind);
       },
       critical: () => {
         actualMethod = 'error';
         handler.onMethod('error');
         handler.onSetLevel(0);
-        return this.#getChainable(actualMethod, handler);
+        return this.#getChainable(actualMethod, handler, bind);
       },
       dir: () => {
         actualMethod = 'dir';
         handler.onMethod('dir');
-        return this.#getChainable(actualMethod, handler);
+        return this.#getChainable(actualMethod, handler, bind);
       },
       error: () => {
         actualMethod = 'error';
         handler.onMethod('error');
-        return this.#getChainable(actualMethod, handler);
-      },
-      group: () => {
-        actualMethod = 'group';
-        handler.onMethod('group');
-        return this.#getChainable(actualMethod, handler);
+        return this.#getChainable(actualMethod, handler, bind);
       },
       info: () => {
         actualMethod = 'info';
         handler.onMethod('info');
-        return this.#getChainable(actualMethod, handler);
+        return this.#getChainable(actualMethod, handler, bind);
       },
       level: (logLevel: number) => {
         handler.onSetLevel(logLevel);
-        return this.#getChainable(actualMethod, handler);
+        return this.#getChainable(actualMethod, handler, bind);
       },
       method: (newMethod: LogMethod) => {
         actualMethod = newMethod;
         handler.onMethod(newMethod);
-        return this.#getChainable(actualMethod, handler);
+        return this.#getChainable(actualMethod, handler, bind);
       },
       table: () => {
         actualMethod = 'table';
         handler.onMethod('table');
-        return this.#getChainable(actualMethod, handler);
+        return this.#getChainable(actualMethod, handler, bind);
       },
       template: (newTemplate: string) => {
         handler.onTemplate(newTemplate);
-        return this.#getChainable(actualMethod, handler);
+        return this.#getChainable(actualMethod, handler, bind);
       },
       warn: () => {
         actualMethod = 'warn';
         handler.onMethod('warn');
-        return this.#getChainable(actualMethod, handler);
+        return this.#getChainable(actualMethod, handler, bind);
       }
     });
   }
@@ -127,7 +141,7 @@ export default class Logger {
       reportEnabled: true,
       reportLevel: Infinity,
       reporterName: 'logger',
-      template: '[{{LEVEL}}]: {{BODY}}',
+      template: '[{{REPORTERNAME}}][{{LEVEL}}]: {{BODY}}',
       ...config
     };
     this._config = storedConfig
@@ -231,7 +245,7 @@ export default class Logger {
   }
 
   #shouldLog(enabled: boolean, logLevel: number, configurationLevel: number) {
-    return configurationLevel >= logLevel;
+    return enabled && configurationLevel >= logLevel;
   }
 
   public config(newConfig: Partial<LogConfigurationParameters>) {
@@ -250,6 +264,86 @@ export default class Logger {
   erasePersistedConfiguration() {
     localStorage.removeItem(this._config.persistObjectName);
     this.#loadConfiguration();
+  }
+
+  fork() {
+    let template: string | undefined;
+    let level: number | undefined;
+    let logMethod: LogMethod | undefined;
+    let forcedConsole: boolean | undefined;
+    let forcedReport: boolean | undefined;
+    let name: string | undefined;
+    let config: undefined | Partial<LogConfigurationParameters>;
+
+    const forkedObject = this.#getChainable(
+      'log',
+      {
+        callback: (...what: unknown[]) => {
+          const returnObject: Record<'critical' | LogMethod, () => unknown> =
+            {} as Record<'critical' | LogMethod, () => unknown>;
+          const methods: ('critical' | LogMethod)[] = [
+            'critical',
+            'dir',
+            'error',
+            'info',
+            'log',
+            'table',
+            'warn'
+          ];
+          methods.forEach((current) => {
+            returnObject[current] = () => {
+              let callMethod = this.Log(...what);
+
+              if (level !== undefined) callMethod = callMethod.level(level);
+              else if (current === 'critical') callMethod.level(0);
+              else if (current === 'error') callMethod.level(1);
+              else if (current === 'warn') callMethod.level(2);
+              else callMethod.level(3);
+
+              const currentMethod = logMethod ?? current;
+              callMethod = callMethod.method(
+                currentMethod === 'critical' ? 'error' : currentMethod
+              );
+
+              if (template !== undefined)
+                callMethod = callMethod.template(template);
+              if (forcedConsole) callMethod = callMethod.forceConsole();
+              if (forcedReport) callMethod = callMethod.forceReport();
+              if (name !== undefined)
+                callMethod = callMethod.changeReporterName(name);
+              if (config !== undefined) callMethod = callMethod.config(config);
+
+              return callMethod;
+            };
+          });
+          return returnObject;
+        },
+        onChangeName: (newName) => {
+          name = newName;
+        },
+        onConfig: (newConfig) => {
+          config = newConfig;
+        },
+        onForcedConsole: () => {
+          forcedConsole = true;
+        },
+        onForcedReport: () => {
+          forcedReport = true;
+        },
+        onMethod: (newLogMethod) => {
+          logMethod = newLogMethod;
+        },
+        onSetLevel: (newLevel) => {
+          level = newLevel;
+        },
+        onTemplate: (newTemplate) => {
+          template = newTemplate;
+        }
+      },
+      false
+    );
+
+    return forkedObject;
   }
 
   /**
@@ -272,46 +366,52 @@ export default class Logger {
     let forcedConsole = false;
     let forcedReport = false;
     let method: LogMethod = this._config.defaultMethod;
+    let reporterName: string | undefined;
     let template: string | undefined;
-    let consoleLogged = false;
+    let config: Partial<LogConfigurationParameters> = {};
 
     setTimeout(() => {
-      const log = { level, template, what };
+      const log: Log = { level, reporterName, template, what };
       if (
         forcedReport ||
         this.#shouldLog(
-          this._config.reportEnabled,
+          config.reportEnabled ?? this._config.reportEnabled,
           level,
-          this._config.reportLevel
+          config.reportLevel ?? this._config.reportLevel
         )
       ) {
         this.logs.push(log);
       }
-      if (
-        !consoleLogged &&
-        (forcedConsole ||
-          this.#shouldLog(
-            this._config.consoleEnabled,
-            level,
-            this._config.consoleLevel
-          ))
-      ) {
-        console[method](this.#formatReport(log));
-      }
     }, 0);
+
+    let hasShoutedName = false;
 
     return this.#getChainable(method, {
       callback: () => {
+        const log = { level, reporterName, template, what };
+
+        if (method === 'table' && !hasShoutedName) {
+          hasShoutedName = true;
+          console.log(log.reporterName);
+        }
+
         const willLog =
           forcedConsole ||
-          (this._config.consoleEnabled && this._config.consoleLevel >= level);
+          this.#shouldLog(
+            config.consoleEnabled ?? this._config.consoleEnabled,
+            level,
+            config.consoleLevel ?? this._config.consoleLevel
+          );
         return {
-          willLog,
-          log: () => {
-            consoleLogged = true;
-            return what;
-          }
+          log: () => (method === 'table' ? what : this.#formatReport(log)),
+          willLog
         };
+      },
+      onChangeName: (newName) => {
+        reporterName = newName;
+      },
+      onConfig: (newConfig) => {
+        config = newConfig;
       },
       onForcedConsole() {
         forcedConsole = true;
@@ -349,10 +449,6 @@ export default class Logger {
       .error();
   }
 
-  public group(...what: unknown[]) {
-    return this.Log(...what).group();
-  }
-
   public info(...what: unknown[]) {
     return this.Log(...what)
       .level(3)
@@ -362,7 +458,7 @@ export default class Logger {
   public log(...what: unknown[]) {
     return this.Log(...what)
       .level(3)
-      .info();
+      .method('log');
   }
 
   public table(...what: unknown[]) {

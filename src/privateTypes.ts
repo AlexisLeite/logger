@@ -1,7 +1,19 @@
-import { LogMethod } from './types';
+import { LogConfigurationParameters, LogMethod } from './types';
+
+export interface ChainableBind {
+  willLog: boolean;
+  log: () => unknown[];
+}
 
 export interface ChainableEvents {
-  callback: () => { willLog: boolean; log: () => unknown[] };
+  /**
+   * Este método es muy importante ya que es el que permite redefinir el comportamiento de #getChainable.
+   *
+   * Al ser llamado deve en realidad devolver una función, que es la que llamará el chainable al ser ejecutado.
+   */
+  callback: () => ChainableBind | unknown;
+  onConfig: (config: Partial<LogConfigurationParameters>) => void;
+  onChangeName: (newName: string) => void;
   onForcedConsole: () => void;
   onForcedReport: () => void;
   onMethod: (method: LogMethod) => void;

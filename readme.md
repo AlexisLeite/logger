@@ -3,6 +3,8 @@
 - [Logger](#logger)
   - [Basic usage](#basic-usage)
     - [Important](#important)
+  - [Fork](#fork)
+    - [Example](#example)
   - [Api](#api)
     - [config](#config)
     - [erase](#erase)
@@ -10,7 +12,7 @@
     - [getReport](#getreport)
   - [Log methods](#log-methods)
   - [Chaining methods](#chaining-methods)
-    - [Example](#example)
+    - [Example](#example-1)
   - [Configurations](#configurations)
   - [window.console methods](#windowconsole-methods)
 
@@ -39,11 +41,10 @@ Example:
 
 ```typescript
 
-usersLogger.critical('Critical error: users database failure');
-// The above line will console.log with fileName index.js (the index.js of the logger library)
+mainLogger.critical('Critical error: users database failure'); 
+// The log will be added to the report but it wont be thrown to the console
 
-// To avoid this error, it is possible to call the method like this:
-usersLogger.critical('Critical error: users database failure')();
+mainLogger.critical('Critical error: users database failure')(); // <-- VERY IMPORTANT, CALL THE RETURNED FUNCTION
 /**
  * Notice that a function call has been added at the end of the expression, now the file and line printed are those where the .log method was called.
  * */
@@ -57,7 +58,7 @@ Logger is a class that must be instantiated in order to put it to work like the 
 const basicLogger = newLogger(); // No customizations
 
 // All customizations
-const usersLogger = new Logger(
+const mainLogger = new Logger(
   {
     consoleEnabled: true,
     consoleLevel: 2, // Critical, errors and warnings (hide info and upper levels)
@@ -71,7 +72,7 @@ const usersLogger = new Logger(
       4: 'DEBUG'
     }, // Exactly the same than default
     persistConfiguration: true, // Whether to save the configuration on the localStorage (when changed through parameters)
-    persistObjectName: 'usersLoggerConfig', // The name used to persist on the localStorage, it's important to pass this option if you are using more than one logger
+    persistObjectName: 'mainLoggerConfig', // The name used to persist on the localStorage, it's important to pass this option if you are using more than one logger
     reportEnabled: true, // Wether to store the logs as to allow the download of a report file
     reportLevel: 0, // Everything (default)
     reporterName:: 'users', // Add the reporterName to the template
@@ -84,6 +85,35 @@ const usersLogger = new Logger(
     getReport: 'report',
     shoutConfiguration: 'shout',
   },);
+
+```
+
+## Fork
+
+The documentation is not ready, but it's possible to use mainLogger.fork() which returns a chainable that can be used to make a personalized fork of the logger, allowing to use unlimited different configurations over the same logger.
+
+### Example
+
+```typescript
+
+const usersLogger = mainLogger
+  .fork()
+  .config({ consoleLevel: 4 })
+  .changeReporterName('usersLogger');
+
+mainLogger.log('A log that wont be shouted to the console')();
+usersLogger.log('A log that WILL be shouted to the console!!')();
+/**
+ * Console:
+ * [usersLogger][INFO]: A log that WILL be shouted to the console!!
+ * 
+
+mainLogger.report();
+/**
+ * Downloaded file:
+ * [mainLogger][INFO]: A log that wont be shouted to the console
+ * [usersLogger][INFO]: A log that WILL be shouted to the console!!
+ * */
 
 ```
 
@@ -135,41 +165,49 @@ The logger offers the same methods than console plus **critical**: dir, error, g
 
 ```typescript 
 
-usersLogger.config({
+mainLogger.config({
   consoleEnabled: true,
   consoleLevel: 2,
   reportEnabled: true,
   reportLevel: 3,
-  reporterName: 'usersLogger',
+  reporterName: 'mainLogger',
   template: '[{{REPORTERNAME}}][{{LEVEL}}]: {{BODY}}'
 })
-usersLogger.log('A debug purpose log')();
+mainLogger.log('A debug purpose log')();
 /**
- * output: [usersLogger][DEBUG]: A debug purpose log
+ * output: [mainLogger][DEBUG]: A debug purpose log
  * 
  * The above method tries to push a level 4 log. However the reportLevel is 3 so it wont be added to the report, and the consoleLevel is 2 and it wont be thrown to the console either. Notice that if consoleLevel were 4, it would have used the console.log method.
 */
-usersLogger.info('An informational log')();
+mainLogger.log('A debug purpose log').config({
+  consoleLevel: 4
+}).changeReporterName('TEMPORAL_NAME');
 /**
- * output: [usersLogger][INFO]: An informational log
+ * output: [TEMPORAL_NAME][DEBUG]: A debug purpose log
+ * 
+ * The above method tries to push a level 4 log and shouts it to the console due to this log has a different consoleLevel (because of the config).
+*/
+mainLogger.info('An informational log')();
+/**
+ * output: [mainLogger][INFO]: An informational log
  * 
  * The above method pushes a log with level 3 to the report. No output in the console since the consoleLevel is 2.
 */
-usersLogger.warn('A warning log')();
+mainLogger.warn('A warning log')();
 /**
- * output: [usersLogger][WARNING]: A warning log
+ * output: [mainLogger][WARNING]: A warning log
  * 
  * The above method pushes a level 2 log to the report and shouts the log with console.warn
 */
-usersLogger.error('An error log')();
+mainLogger.error('An error log')();
 /**
- * output: [usersLogger][ERROR]: An error log
+ * output: [mainLogger][ERROR]: An error log
  * 
  * The above method pushes a level 1 log to the report and shouts the log with console.error
 */
-usersLogger.critical('A critical error')();
+mainLogger.critical('A critical error')();
 /**
- * output: [usersLogger][CRITICAL]: A critical error
+ * output: [mainLogger][CRITICAL]: A critical error
  * 
  * The above method pushes a level 0 log to the report and shouts the log with console.error
 */
@@ -183,8 +221,12 @@ Notice that methods **can be chained** in order to alter the behavior of any log
 ## Chaining methods
 
 All the log methods are chainable with configuration methods in order to alter the behavior of the log that is being emitted. The chain methods are: 
+
  - **forceConsole**: Forces the output to the console removing the level restrictions for the current log.
  - **forceReport**: Forces the output to the report removing the level restrictions for the current log.
+
+ - **changeReporterName**: Changes the displayed reporter's name for this log only.
+ - **config**: Passes a configuration object that will affect this log only.
  - **dir**: Shouts if corresponds the log to the console with the dir method.
  - **error**: Shouts if corresponds the log to the console with the error method.
  - **group**: Shouts if corresponds the log to the console with the group method.
@@ -199,7 +241,7 @@ All the log methods are chainable with configuration methods in order to alter t
 
 ```typescript
 
-usersLogger.log('This error must be shown, no matter the configuration. Its level should be 0. The console method must be console.table. It should use a custom template')
+mainLogger.log('This error must be shown, no matter the configuration. Its level should be 0. The console method must be console.table. It should use a custom template')
   .forceConsole()
   .forceReport()
   .level(0)
@@ -281,19 +323,19 @@ It allows the user to pass custom method names, which will be used to generate f
 
 ```typescript
 new Logger({ /** Empty configuration object */ }, {
-  config: 'usersLoggerConfig',
-  eraseConfiguration: 'usersLoggerEraseConfiguration',
-  getReport: 'usersLoggerGetReport',
-  log: 'usersLoggerLog',
-  shoutConfiguration: 'usersLoggerShoutConfiguration'
+  config: 'mainLoggerConfig',
+  eraseConfiguration: 'mainLoggerEraseConfiguration',
+  getReport: 'mainLoggerGetReport',
+  log: 'mainLoggerLog',
+  shoutConfiguration: 'mainLoggerShoutConfiguration'
 });
 ```
 
 Then, in the console you can run the following methods:
 
 ```javascript
-usersLoggerLog('Put this log please', { status: 'success' });
-usersLoggerConfig({
+mainLoggerLog('Put this log please', { status: 'success' });
+mainLoggerConfig({
   consoleLevel: 1, // Only CRITICAL and ERROR
   reportLevel: Infinity, // Everything
 })

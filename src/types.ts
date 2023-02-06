@@ -10,7 +10,7 @@ export type LogFunctions = Record<
 
 export type LogMethod = keyof Pick<
   typeof console,
-  'dir' | 'error' | 'group' | 'info' | 'log' | 'table' | 'warn'
+  'dir' | 'error' | 'info' | 'log' | 'table' | 'warn'
 >;
 
 export interface LogConfigurationParameters {
@@ -35,6 +35,7 @@ export interface LogConfigurationParameters {
 
 export interface Log {
   level: number;
+  reporterName?: string;
   template?: string;
   what: unknown[];
 }
