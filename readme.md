@@ -7,13 +7,13 @@
     - [Example](#example)
   - [Api](#api)
     - [config](#config)
-    - [erase](#erase)
-    - [erasePersistedConfiguration](#erasepersistedconfiguration)
     - [getReport](#getreport)
   - [Log methods](#log-methods)
   - [Chaining methods](#chaining-methods)
     - [Example](#example-1)
   - [Configurations](#configurations)
+  - [Templating](#templating)
+    - [Default template:](#default-template)
   - [window.console methods](#windowconsole-methods)
 
 
@@ -22,6 +22,8 @@ Offers a very simple way to log a component actions to a file, which could be do
 Its logic is very simple: all logs have a level associated. If the log's level is greater than or equal to the configured level, it will be shouted.
 
 Every log's level is queried two times, one time in order to determine if it must be logged to the report and a second time in order to determine if it must be shouted to the console.
+
+It is also **forkable**, which means you can multiple loggers with absolutely different configurations working over the same report file.
 
 ```typescript
 <Button onClick={
@@ -40,9 +42,6 @@ Due to console.log cannot be wrapped keeping the original file and line number, 
 Example:
 
 ```typescript
-
-mainLogger.critical('Critical error: users database failure'); 
-// The log will be added to the report but it wont be thrown to the console
 
 mainLogger.critical('Critical error: users database failure')(); // <-- VERY IMPORTANT, CALL THE RETURNED FUNCTION
 /**
@@ -71,8 +70,6 @@ const mainLogger = new Logger(
       3: 'INFO',
       4: 'DEBUG'
     }, // Exactly the same than default
-    persistConfiguration: true, // Whether to save the configuration on the localStorage (when changed through parameters)
-    persistObjectName: 'mainLoggerConfig', // The name used to persist on the localStorage, it's important to pass this option if you are using more than one logger
     reportEnabled: true, // Wether to store the logs as to allow the download of a report file
     reportLevel: 0, // Everything (default)
     reporterName:: 'users', // Add the reporterName to the template
@@ -92,6 +89,8 @@ const mainLogger = new Logger(
 
 The documentation is not ready, but it's possible to use mainLogger.fork() which returns a chainable that can be used to make a personalized fork of the logger, allowing to use unlimited different configurations over the same logger.
 
+While the most methods of the fork works exactly the same as the original methods, there are some slightly differences that will be explained when I have more time to dedicate to this readme.
+
 ### Example
 
 ```typescript
@@ -102,11 +101,15 @@ const usersLogger = mainLogger
   .changeReporterName('usersLogger');
 
 mainLogger.log('A log that wont be shouted to the console')();
-usersLogger.log('A log that WILL be shouted to the console!!')();
+usersLogger('A log that WILL be shouted to the console!!').log()();
+usersLogger('CRITICAL TO THE CONSOLE BUT NOT TO THE REPORT')
+  .disableReport()
+  .critical()();
+
 /**
  * Console:
  * [usersLogger][INFO]: A log that WILL be shouted to the console!!
- * 
+ * [usersLogger][CRITICAL]: CRITICAL TO THE CONSOLE BUT NOT TO THE REPORT
 
 mainLogger.report();
 /**
@@ -121,30 +124,11 @@ mainLogger.report();
 
 ### config
 
-Allows to override the current configuration. If persistConfiguration is enabled, the config passed will be used next time the app runs, even if this method is not called anymore.
+Allows to override the current configuration.
 
 ```typescript
 
 config(newConfig: Partial<LogConfigurationParameters>)
-
-```
-### erase
-
-Deletes the report logs, then, all logs made before this point wont be print to the report file.
-
-```typescript
-
-erase()
-
-```
-
-### erasePersistedConfiguration
-
-Deletes the stored configuration.
-
-```typescript
-
-erasePersistedConfiguration()
 
 ```
 
@@ -273,8 +257,6 @@ export interface LogConfigurationParameters {
     3: 'INFO',
     4: 'DEBUG'
   }*/
-  persistConfiguration: boolean; // Defaults to true
-  persistObjectName: string; // Defaults to 'loggerPersist
   reportEnabled: boolean; // Defaults to true
   reportLevel: number; // Defaults to Infinity (everything)
   reporterName?: string; // Defaults to 'logger'
@@ -301,12 +283,32 @@ const levelNames = {
 
 ```
 
- - **persistConfiguration**: Whether to persist the configuration to the localStorage or not.
- - **persistObjectName**: The name that will be used in the localStorage to keep the configuration.
  - **reportEnabled**: Whether to print to report or not.
  - **reportLevel**: Which is the maximum level reported to the report, pass Infinity to allow all.
  - **reporterName**: If you include the placeholder {{REPORTERNAME}} in a custom passed template, it will be replaced by the content of this property.
  - **template**: Allows to modify the way each line of the report is shown.
+
+## Templating
+
+The template passed through configuration or by chain, allows to use the following placeholders:
+
+ - **{{hh}}**: Puts the hour
+ - **{{mm}}**: Puts the minutes
+ - **{{ss}}**: Puts the seconds
+ - **{{ms}}**: Puts the milliseconds
+ - **{{DD}}**: Puts the day
+ - **{{MM}}**: Puts the month
+ - **{{YYYY}}**: Puts the year
+ - **{{LEVEL}}**: Puts the current level name (or the number if it doesn't exist)
+ - **{{REPORTERNAME}}**: Puts the reporter name
+ - **{{BODY}}**: Puts the message
+ - **{{MESSAGE}}**: Puts the message
+
+### Default template:
+
+```typescript
+'[{{DD}}/{{MM}}/{{YYYY}}]:[{{hh}}:{{mm}}:{{ss}}:{{ms}}][{{REPORTERNAME}}][{{LEVEL}}]: {{BODY}}'
+```
 
 ## window.console methods
 
